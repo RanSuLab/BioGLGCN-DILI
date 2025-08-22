@@ -27,38 +27,15 @@ class BioGLGCN(nn.Module):
 
         self.relu = torch.nn.LeakyReLU()
 
-        self.layers0 = SparseGraphLearn(input_dim=self.input_dim,
-                                        output_dim=self.layer0_outputdim,
-                                        num=self.num,
-                                        edge=self.edge,
-                                        adj=self.adj,
-                                        gene_p=self.gene_p,
-                                        phi=self.phi,
-                                        act=torch.nn.Sigmoid(),
-                                        sparse_inputs=True)
-
-        self.layers1 = GraphConvolution(input_dim=1,
-                                        output_dim=self.layer1_outputdim,
-                                        act=torch.nn.LeakyReLU(),
-                                        sparse_inputs=False,
-                                        bias=True)
-
-        self.layers2 = GraphConvolution(input_dim=self.layer1_outputdim,
-                                        output_dim=self.layer2_outputdim,
-                                        act=torch.nn.LeakyReLU(),
-                                        sparse_inputs=False,
-                                        bias=True
-                                        )
-
         self.BatchNorm1d_1 = torch.nn.BatchNorm1d(num_features=978)
 
-        self.lin1 = torch.nn.Linear(978 * self.layer2_outputdim, 512)
+        self.lin1 = torch.nn.Linear(1024 * self.layer2_outputdim, 512)
         self.BatchNorm1d_2 = torch.nn.BatchNorm1d(num_features=512)
         
-        self.lin2 = torch.nn.Linear(512, 32)
+        self.lin2 = torch.nn.Linear(256, 64)
         self.BatchNorm1d_3 = torch.nn.BatchNorm1d(num_features=32)
         
-        self.lin3 = torch.nn.Linear(32, 2)
+        self.lin3 = torch.nn.Linear(64, 2)
         
     def forward(self, gl_input, gcn_input):
 
@@ -73,14 +50,8 @@ class BioGLGCN(nn.Module):
         self.flattened = self.layer2.view(self.layer2.size(0), -1)
 
         self.dense1 = self.lin1(self.flattened)
-        self.dense1 = self.BatchNorm1d_2(self.dense1)
-        self.dense1 = self.relu(self.dense1)
-        self.dense1 = torch.nn.Dropout(p=self.dropout)(self.dense1)
-
+        
         self.dense2 = self.lin2(self.dense1)
-        self.dense2 = self.BatchNorm1d_3(self.dense2)
-        self.dense2 = self.relu(self.dense2)
-        self.dense2 = torch.nn.Dropout(p=self.dropout)(self.dense2)
         
         self.dense3 = self.lin3(self.dense2)
 

@@ -58,18 +58,6 @@ args = parser.parse_args()
 device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() and args.gpu >= 0 else "cpu")
 
 
-with open('./data/gene_p.txt', 'r') as file:
-    lines = file.readlines()
-    i = 0
-    for line in lines:
-        if(i==0):
-            gene_list = line.strip().split(' ')
-        if(i==1):
-            value = line.strip().split(' ')
-
-        i += 1
-
-
 value = list(map(float, value))
 normalize_value = normalize_list(value)
 
@@ -81,53 +69,6 @@ data_label=pd.read_excel('./data/L1000_Expr_subdata_sig_id_label.XLSX')['DILIst 
 x = data_feature.iloc[: , 1:].iloc[0: , :]
 y = data_label
 
-'''
-x
-            16        23        25        30        39        47       102  ...    147179    148022    200081    200734    256364    375346     388650
-0    -0.273900  1.130100 -0.156750  0.687400 -4.058650  0.815700 -0.218150  ... -0.537950  2.260750 -1.621900 -0.832750 -0.534950  0.853400   1.815600
-1    -2.592874 -1.112710 -0.562751  1.980042 -0.850379  1.009283  0.988296  ...  2.363817 -1.243268 -3.171911 -0.075645 -2.564447  2.868700   0.303892
-2    -0.159000 -0.683950 -1.927550  1.124000  0.230600  0.143950  0.113850  ... -0.067000 -1.610100 -1.036000 -0.367700  0.166800  1.244100   0.786450
-3    -0.770650  3.485550 -4.199150 -2.880950 -5.549300 -2.692650 -2.703900  ... -2.283850 -0.235100 -5.002700 -0.288700 -0.557150  0.899650   1.713000
-4     1.181900  1.466400 -0.834100 -0.398200  2.232000 -2.027300  1.848400  ... -3.111400  2.705500 -3.419400 -7.587300 -0.942600  1.360400   1.473200
-...        ...       ...       ...       ...       ...       ...       ...  ...       ...       ...       ...       ...       ...       ...        ...
-5995  1.040600  0.067500  0.384300 -1.393800 -0.253800 -0.660000 -0.162300  ... -0.145300 -2.501300 -2.808700  1.790900 -0.678200 -0.014500 -10.000000
-5996  1.452775 -0.174853  0.472281  0.210708  0.736352  0.101806 -0.022184  ...  0.252130 -1.072445  1.252616  0.299790 -0.412713  0.099130  -0.193858
-5997 -3.063756  0.287776 -0.213062 -0.865963 -2.259327  2.488603  7.281178  ...  2.196773  1.963336  1.136331 -3.718022  2.555697  2.589732  -1.465106
-5998  0.880278  0.175041 -0.312804  0.855141 -0.329998 -1.239330 -0.401126  ... -0.123923 -0.453814 -0.623671 -0.409342  0.266684  0.688531  -1.957750
-5999 -0.045258  1.652625  1.524762 -0.032379 -0.746086  1.326783  1.469654  ...  0.542418  0.616446 -1.526584 -0.951404  0.440162  1.982720   2.464712
-
-[6000 rows x 978 columns]
-
-y
-0       0
-1       0
-2       0
-3       1
-4       0
-       ..
-5995    1
-5996    0
-5997    1
-5998    1
-5999    1
-Name: DILIst binaray classfication, Length: 6000, dtype: int64
-
-'''
-# ppi
-ppi_matrix = pd.read_csv('./data/gene_978_matrix_700.csv', header=None) # 978个基因的关系矩阵
-adj, edge = preprocess_Finaladj(ppi_matrix)
-edge = torch.from_numpy(edge).to(device)
-'''
-adj:  (array([[  0,   0],
-       [  0, 141],
-       [  0, 764],
-       ...,
-       [975, 975],
-       [976, 976],
-       [977, 977]], dtype=int32), array([1.   , 0.988, 0.829, ..., 1.   , 1.   , 1.   ]), (978, 978))
-edge:  [[  0   0   0 ... 975 976 977]
- [  0 141 764 ... 975 976 977]]
-'''
 def train_model(model, optimizer1, optimizer2, scheduler1, scheduler2, graphLearn_input, train_input, train_labels, test_input, test_labels, k_num, epochs=800):
     # Train model
     loss_list = []
@@ -336,30 +277,19 @@ for train_index, test_index in KF.split(x,y):
     test_labels = torch.Tensor(test_labels).to(device).float()
 
     # init model
-    model = BioGLGCN(edge=edge,
-            adj=adj,
-            gene_p=normalize_value,
-            num=graphLearn_input[2][0],
-            input_dim=graphLearn_input[2][1],
-            output_dim=2,
-            phi=args.Phi,
-            layer0_outputdim=args.layer0_outputdim,
-            layer1_outputdim=args.layer1_outputdim,
-            layer2_outputdim=args.layer2_outputdim,
-            dropout=args.dropout,
-            ).to(device)
+    model = BioGLGCN().to(device)
 
     # init optimizer,lr
     # GL optimizer
-    optimizer1 = torch.optim.Adam(model.layers0.parameters(), lr=0.001)
+    optimizer1 = torch.optim.Adam(model.layers0.parameters(), lr=0.000001)
     # GCN, Linear optimizer
     parameters_to_optimize = list(model.layers1.parameters()) + list(model.lin1.parameters()) + list(model.lin2.parameters()) + list(model.lin3.parameters())
 
-    optimizer2 = torch.optim.Adam(parameters_to_optimize, lr=0.00002)
+    optimizer2 = torch.optim.Adam(parameters_to_optimize, lr=0.00000002)
 
     # lr update rule
-    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer1, step_size=100, gamma=args.gamma)
-    scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer2, step_size=50, gamma=args.gamma)
+    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer1, step_size=10, gamma=args.gamma)
+    scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer2, step_size=20, gamma=args.gamma)
 
 
     #--------------------------------train model------------------------------#

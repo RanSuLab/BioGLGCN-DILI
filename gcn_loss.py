@@ -36,11 +36,7 @@ class gcnLoss(nn.Module):
             # var = var.detach()
             self.loss2 = self.loss2 + self.weight_decay * torch.norm(var) ** 2
 
-        weights = [1.0, 1.0]
-        class_weights = torch.FloatTensor(weights).to(device)
-        criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
-
-        # criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss()
         self.loss2 = self.loss2 + criterion(outputs, y_train.detach())
         self.loss = self.loss1 + self.loss2
 

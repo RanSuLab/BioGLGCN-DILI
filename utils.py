@@ -49,37 +49,6 @@ def sample_mask(idx, l):
     # print(mask)
     return np.array(mask, dtype=np.bool_)
 
-def sparse_to_tuple(sparse_mx):
-    """Convert sparse matrix to tuple representation."""
-    def to_tuple(mx):
-        if not sp.isspmatrix_coo(mx):
-            mx = mx.tocoo()
-        coords = np.vstack((mx.row, mx.col)).transpose()
-        values = mx.data
-        shape = mx.shape
-        return coords, values, shape
-    if isinstance(sparse_mx, list):
-    # 如果 sparse_mx 是 list 类型，那么 isinstance(sparse_mx, list) 将返回 True，否则返回 False
-        for i in range(len(sparse_mx)):
-            sparse_mx[i] = to_tuple(sparse_mx[i])
-    else:
-        sparse_mx = to_tuple(sparse_mx)
-
-    return sparse_mx
-
-#normalization
-def preprocess_features(features):
-    features = sp.coo_matrix(features)
-    
-    rowsum = np.array(features.sum(1)) # Sum over each row
-    r_inv = np.power(rowsum, -1).flatten() # 取倒数
-    r_inv[np.isinf(r_inv)] = 0.# If all of the rows are 0, then r_inv is going to be equal to infinity, so let's set r_inv to 0 for those rows
-    r_mat_inv = sp.diags(r_inv)# Construct the diagonal matrix with the diagonal element r_inv
-    features = r_mat_inv.dot(features)  # By standardizing the dot product of the diagonal matrix with the original matrix, each row of the original matrix is multiplied by the corresponding r_inv, which is equivalent to dividing by sum
-    return sparse_to_tuple(features)
-
-
-
 
 def preprocess_Finaladj(adj):
     """Preprocessing of adjacency matrix for simple GCN model and conversion to tuple representation."""

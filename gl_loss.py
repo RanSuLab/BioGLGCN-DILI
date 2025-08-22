@@ -34,13 +34,7 @@ class glLoss(nn.Module):
         # Graph Learning loss
         device = self.model.S.device
         D = (torch.diag(torch.ones(self.model.num)) * 1).to(device)
-        S = self.model.S
         
-        D = D + (1 * S.to_dense())
-        
-        D = D.to(torch.float)
-        x = self.model.x.to(torch.float)
-        D = torch.matmul(torch.transpose(x, 0, 1), D)
 
         self.loss1 = self.loss1 + torch.trace(torch.matmul(D, x)) * 0.1
 
@@ -49,10 +43,6 @@ class glLoss(nn.Module):
 
         N = self.model.num
         adj = self.model.adj
-        adj = torch.sparse_coo_tensor(torch.tensor(adj[0]).t(), adj[1], size=[N, N]).to(device)
-        S_A = (S.to_dense() + (-1 * torch.pow(adj.to_dense(), self.phi)))
-
-        self.loss1 = self.loss1 - torch.trace(torch.matmul(S_A.t(), S_A)) * self.L1_beta
 
 
         self.loss = self.loss1
